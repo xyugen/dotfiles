@@ -1,0 +1,149 @@
+let mapleader=" "
+
+set autoindent
+set number
+set tabstop=4
+set shiftwidth-4
+set smarttab
+set softtabstop-4
+set mouse=a
+set clipboard=unnamedplus
+
+call plug#begin(has('nvim') ? stdpath('data') . '/plugged' : '~/.local/share/nvim/site/autoload/plugged')
+
+Plug 'airblade/vim-gitgutter'
+Plug 'nvim-treesitter/nvim-treesitter'
+Plug 'terryma/vim-smooth-scroll'
+Plug 'ap/vim-css-color' " CSS Color Preview
+Plug 'gruvbox-community/gruvbox' " gruvbox-theme
+Plug 'wfxr/code-minimap'
+Plug 'wfxr/minimap.vim' " minimap
+Plug 'rstacruz/vim-closer'
+Plug 'Xuyuanp/nerdtree-git-plugin'
+Plug 'preservim/nerdtree' " NerdTree
+Plug 'neoclide/coc.nvim', {'branch': 'release'} " autocomplete
+Plug 'vim-airline/vim-airline' " Status Bar
+Plug 'ryanoasis/vim-devicons' " Developer Icons
+Plug 'tc50cal/vim-terminal' " Vim Terminal
+
+call plug#end()
+" ___________________________________________________________________________________________
+syntax on
+
+colorscheme gruvbox
+
+let g:minimap_width = 10
+let g:minimap_auto_start = 1
+let g:minimap_auto_start_win_enter = 1
+"_____________________________________________________________________________________________
+" Start NERDTree and put the cursor back in the other window.
+autocmd VimEnter * NERDTree | wincmd p
+
+" Exit Vim if NERDTree is the only window remaining in the only tab.
+autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.is
+
+let g:coc_node_path = '/usr/bin/node'
+
+" use <tab> for trigger completion and navigate to the next complete item
+function! CheckBackspace() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+inoremap <silent><expr> <Tab>
+      \ coc#pum#visible() ? coc#pum#next(1) :
+      \ CheckBackspace() ? "\<Tab>" :
+      \ coc#refresh()
+
+"_____________________________________________________________________________________________
+" Compile C++
+" for detecting OS
+if !exists("g:os")
+    if has("win64") || has("win32") || has("win16")
+        let g:os = "Windows"
+    else
+        let g:os = substitute(system('uname'), '\n', '', '')
+    endif
+endif
+
+" important option that should already be set!
+set hidden
+
+" available options:
+" * g:split_term_style
+" * g:split_term_resize_cmd
+function! TermWrapper(command) abort
+	if !exists('g:split_term_style') | let g:split_term_style = 'vertical' | endif
+	if g:split_term_style ==# 'vertical'
+		let buffercmd = 'vnew'
+	elseif g:split_term_style ==# 'horizontal'
+		let buffercmd = 'new'
+	else
+		echoerr 'ERROR! g:split_term_style is not a valid value (must be ''horizontal'' or ''vertical'' but is currently set to ''' . g:split_term_style . ''')'
+		throw 'ERROR! g:split_term_style is not a valid value (must be ''horizontal'' or ''vertical'')'
+	endif
+	exec buffercmd
+	if exists('g:split_term_resize_cmd')
+		exec g:split_term_resize_cmd
+	endif
+	exec 'term ' . a:command
+	exec 'setlocal nornu nonu'
+	exec 'startinsert'
+	autocmd BufEnter <buffer> startinsert
+endfunction
+
+command! -nargs=0 CompileAndRun call TermWrapper(printf('g++ -std=c++11 %s && ./a.out', expand('%')))
+command! -nargs=1 -complete=file CompileAndRunWithFile call TermWrapper(printf('g++ -std=c++11 %s && ./a.out < %s', expand('%'), <q-args>))
+autocmd FileType cpp nnoremap <leader>fw :CompileAndRun<CR>
+
+" For those of you that like to use the default ./a.out
+" This C++ toolkit gives you commands to compile and/or run in different types
+" of terminals for your own preference.
+" NOTE: this version is more stable than the other version with specified
+" output executable!
+augroup CppToolkit
+	autocmd!
+	if g:os == 'Darwin'
+		autocmd FileType cpp nnoremap <leader>fn :!g++ -std=c++11 -o %:r % && open -a Terminal './a.out'<CR>
+	endif
+	autocmd FileType cpp nnoremap <leader>fb :!g++ -std=c++11 % && ./a.out<CR>
+	autocmd FileType cpp nnoremap <leader>fr :!./a.out<CR>
+	autocmd FileType cpp nnoremap <leader>fw :CompileAndRun<CR>
+augroup END
+
+" For those of you that like to use -o and a specific outfile executable
+" (i.e., xyz.cpp makes executable xyz, as opposed to a.out
+" This C++ toolkit gives you commands to compile and/or run in different types
+" of terminals for your own preference.
+augroup CppToolkit
+	autocmd!
+	if g:os == 'Darwin'
+		autocmd FileType cpp nnoremap <leader>fn :!g++ -std=c++11 -o %:r % && open -a Terminal './%:r'<CR>
+	endif
+	autocmd FileType cpp nnoremap <leader>fb :!g++ -std=c++11 -o %:r % && ./%:r<CR>
+	autocmd FileType cpp nnoremap <leader>fr :!./%:r.out<CR>
+augroup END
+
+" options
+" choose between 'vertical' and 'horizontal' for how the terminal window is split
+" (default is vertical)
+let g:split_term_style = 'horizontal'
+
+" add a custom command to resize the terminal window to your preference
+" (default is to split the screen equally)
+let g:split_term_resize_cmd = 'resize 6'
+" (or let g:split_term_resize_cmd = 'vertical resize 40')
+" ------------------------------------------------------------------------
+" CUSTOM COMMANDS
+command PyRun term python %
+" command CppRun !g++ % -o %< && ./%€kb€kr€kr€ý,€ý.<
+" command CppRun !konsole -e \"bash -c 'g++ % -o %< && ./ %< && bash'\" -i
+command CppRun belowright split | term bash -c 'g++ % -o %< && ./%< < /dev/tty && read -p "Press Enter to continue..."'
+
+nnoremap <C-R> :sp <CR> :term python % <CR>
+nnoremap <C-W> :bd! <CR>
+
+" nerdtree toggle
+nnoremap <C-f> :NERDTreeFocus<CR>
+nnoremap <C-n> :NERDTree<CR>
+nnoremap <C-t> :NERDTreeToggle<CR>
