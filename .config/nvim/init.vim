@@ -42,6 +42,7 @@ Plug 'neoclide/coc.nvim', {'branch': 'release'} " Intellisense engine
 Plug 'bluz71/vim-moonfly-colors' " Moonfly theme
 Plug 'gruvbox-community/gruvbox' " Gruvbox theme
 Plug 'tc50cal/vim-terminal' " Vim Terminal
+Plug 'folke/tokyonight.nvim', { 'branch': 'main' } " tokyonight theme
 
 call plug#end()
 
@@ -102,7 +103,11 @@ inoremap <silent><expr> <Tab>
 " colorscheme moonfly
 
 " GruvBox
-colorscheme gruvbox
+" colorscheme gruvbox
+
+" TokyoNight
+" tokyonight/-night/-storm/-day/-moon
+colorscheme tokyonight-moon
 
 " __________________________________________
 " Start NERDTree and put the curson back in the other window.
@@ -113,7 +118,8 @@ autocmd BufEnter * if tabpagenr('$') == 1 && winnr('$') == 1 && exists('b:NERDTr
 
 " ------------------------------------------------------------------------
 " CUSTOM COMMANDS
-command PyRun term python %
-" command CppRun !g++ % -o %< && ./%�kb�kr�kr��,��.^[<
-" command CppRun !konsole -e \"bash -c 'g++ % -o %< && ./ %< && bash'\" -i
+# Run python file
+command PyRun belowright split | term python %
+
+# Run C++ file
 command CppRun belowright split | term bash -c 'g++ % -o %< && ./%< < /dev/tty && read -p "Press Enter to continue..."'
